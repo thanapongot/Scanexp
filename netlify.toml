@@ -1,0 +1,6 @@
+# This repository currently contains no application source, package manifest,
+# or framework — only a README. There is nothing to compile, so Netlify deploys
+# the repository root as-is. Update `command` and `publish` once app code is added.
+[build]
+  publish = "."
+  command = ""
