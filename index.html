@@ -1,0 +1,1552 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ระบบบันทึกวันหมดอายุยา EXP(OPD)</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<!-- ล็อกเวอร์ชันไลบรารีสแกน Barcode (เดิมใช้ unpkg แบบไม่ระบุเวอร์ชัน) -->
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+<style>
+:root{
+  --primary:#1677c8;
+  --primary-dark:#105b9d;
+  --success:#16a36a;
+  --background:#f4f7fb;
+  --text:#243447;
+}
+
+*{box-sizing:border-box}
+
+body{
+  font-family:'Sarabun',sans-serif;
+  background:var(--background);
+  color:var(--text);
+  font-size:15px;
+}
+
+.navbar-custom{
+  background:linear-gradient(110deg,#1265ae,#2196cf);
+  color:white;
+  padding:17px 0;
+  box-shadow:0 3px 12px rgba(0,0,0,.12);
+}
+
+.brand-icon{
+  width:45px;height:45px;border-radius:14px;
+  background:rgba(255,255,255,.2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:25px;
+}
+
+.brand-title{font-size:19px;font-weight:700}
+.brand-sub{font-size:12px;opacity:.85}
+
+.main-container{
+  max-width:1250px;
+  margin:auto;
+  padding:22px 15px 40px;
+}
+
+.section-card{
+  background:white;border-radius:16px;padding:22px;
+  box-shadow:0 3px 15px rgba(35,70,110,.06);
+  border:1px solid #edf1f5;margin-bottom:20px;
+}
+
+.section-title{
+  font-size:18px;font-weight:700;margin-bottom:18px;
+  display:flex;align-items:center;gap:9px;
+}
+
+.section-title i{color:var(--primary)}
+
+.stat-card{
+  background:white;border-radius:14px;padding:16px;
+  height:100%;border:1px solid #edf1f5;
+  box-shadow:0 2px 10px rgba(0,0,0,.035);
+}
+
+.stat-icon{
+  width:43px;height:43px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:21px;
+}
+
+.stat-number{
+  font-size:25px;font-weight:700;line-height:1.3;
+  margin-top:10px;
+}
+
+.stat-label{color:#718096;font-size:13px}
+
+.form-label{font-weight:600;font-size:14px;margin-bottom:7px}
+
+.form-control,.form-select{
+  min-height:45px;border-radius:10px;
+  border-color:#dce4ed;font-family:inherit;
+}
+
+.form-control:focus,.form-select:focus{
+  border-color:var(--primary);
+  box-shadow:0 0 0 .2rem rgba(22,119,200,.12);
+}
+
+.barcode-input{font-size:19px;letter-spacing:1px;font-weight:600}
+
+.btn{
+  border-radius:10px;min-height:43px;
+  font-family:inherit;font-weight:600;
+}
+
+.btn-primary{background:var(--primary);border-color:var(--primary)}
+.btn-primary:hover{background:var(--primary-dark)}
+
+.btn-scan{
+  background:#e7f4ff;color:#116bb1;
+  border:1px solid #c9e5ff;
+}
+
+.btn-scan:hover{background:#d4eaff;color:#105b9d}
+
+.expiry-box{
+  background:#f8fbff;border:1px solid #dceaf8;
+  border-radius:12px;padding:14px;height:100%;
+}
+
+.expiry-preview{
+  color:var(--success);font-size:14px;
+  font-weight:600;min-height:22px;margin-top:7px;
+}
+
+.readonly-field{background:#f2f5f8!important;color:#526173}
+
+.info-box{
+  border-radius:10px;background:#eef7ff;
+  color:#24669c;padding:11px 13px;font-size:13px;
+}
+
+.table thead th{
+  background:#edf5fc;color:#31536f;
+  white-space:nowrap;font-size:13px;
+  font-weight:700;padding:13px 10px;
+}
+
+.table tbody td{
+  padding:12px 10px;vertical-align:middle;font-size:13px;
+}
+
+.drug-name{min-width:180px;font-weight:600}
+
+.badge-surveyed{
+  background:#dcf8eb;color:#168352;
+  padding:6px 10px;border-radius:20px;font-size:12px;
+}
+
+.badge-pending{
+  background:#fff2d8;color:#a76c00;
+  padding:6px 10px;border-radius:20px;font-size:12px;
+}
+
+.pagination .page-link{
+  border-radius:8px;margin:0 2px;color:var(--primary);
+}
+
+.pagination .active .page-link{
+  background:var(--primary);border-color:var(--primary);
+}
+
+#reader{
+  width:100%;max-width:420px;
+  margin:auto;overflow:hidden;border-radius:12px;
+}
+
+.scanner-area{
+  background:#f2f7fc;padding:15px;border-radius:14px;
+}
+
+.footer{
+  text-align:center;color:#8794a3;
+  font-size:12px;padding:20px 10px;line-height:1.8;
+}
+
+.loading-overlay{
+  position:fixed;inset:0;background:rgba(255,255,255,.8);
+  z-index:3000;display:none;
+  align-items:center;justify-content:center;
+}
+
+.loading-overlay.show{display:flex}
+
+.match-item{
+  border:1px solid #e1eaf2;border-radius:10px;
+  padding:12px;margin-bottom:8px;
+  cursor:pointer;background:white;
+}
+
+.match-item:hover{
+  background:#edf7ff;border-color:var(--primary);
+}
+
+@media(max-width:767px){
+  .main-container{padding:14px 10px 30px}
+  .section-card{padding:16px;border-radius:13px}
+  .brand-title{font-size:16px}
+  .stat-card{padding:12px}
+  .stat-number{font-size:22px}
+  .stat-icon{width:36px;height:36px}
+  .section-title{font-size:16px}
+  .table-responsive{margin:0 -5px}
+  .expiry-box{padding:11px}
+}
+</style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+<nav class="navbar-custom">
+  <div class="container-fluid px-3" style="max-width:1250px">
+    <div class="d-flex align-items-center gap-3">
+      <div class="brand-icon">
+        <i class="bi bi-capsule-pill"></i>
+      </div>
+      <div>
+        <div class="brand-title">ระบบบันทึกวันหมดอายุยา EXP(OPD)</div>
+        <div class="brand-sub">กลุ่มงานเภสัชกรรม โรงพยาบาลสมเด็จพระพุทธเลิศหล้า</div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="main-container">
+
+  <!-- DASHBOARD -->
+  <div class="row g-3 mb-3">
+
+    <div class="col-6 col-lg-3">
+      <div class="stat-card">
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="stat-label">รายการยาทั้งหมด</div>
+          <div class="stat-icon" style="background:#e5f2ff;color:#1677c8">
+            <i class="bi bi-capsule"></i>
+          </div>
+        </div>
+        <div class="stat-number" id="totalCount">0</div>
+        <div class="stat-label">รายการ</div>
+      </div>
+    </div>
+
+    <div class="col-6 col-lg-3">
+      <div class="stat-card">
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="stat-label">สำรวจแล้ว</div>
+          <div class="stat-icon" style="background:#e1f8ed;color:#16a36a">
+            <i class="bi bi-check-circle"></i>
+          </div>
+        </div>
+        <div class="stat-number text-success" id="surveyedCount">0</div>
+        <div class="stat-label">รายการ</div>
+      </div>
+    </div>
+
+    <div class="col-6 col-lg-3">
+      <div class="stat-card">
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="stat-label">ยังไม่สำรวจ</div>
+          <div class="stat-icon" style="background:#fff3df;color:#d18b13">
+            <i class="bi bi-clock-history"></i>
+          </div>
+        </div>
+        <div class="stat-number text-warning" id="pendingCount">0</div>
+        <div class="stat-label">รายการ</div>
+      </div>
+    </div>
+
+    <div class="col-6 col-lg-3">
+      <div class="stat-card">
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="stat-label">บันทึกวันหมดอายุแล้ว</div>
+          <div class="stat-icon" style="background:#f6eaff;color:#9251c9">
+            <i class="bi bi-calendar-check"></i>
+          </div>
+        </div>
+        <div class="stat-number" style="color:#9251c9" id="recordedCount">0</div>
+        <div class="stat-label">รายการ</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FORM -->
+  <div class="section-card">
+
+    <div class="section-title">
+      <i class="bi bi-upc-scan"></i>
+      บันทึกวันหมดอายุรายการยา
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Barcode</label>
+      <div class="input-group">
+        <input type="text" id="barcode"
+          class="form-control barcode-input"
+          placeholder="สแกนหรือกรอก Barcode"
+          inputmode="numeric" autocomplete="off"
+          onkeydown="if(event.key==='Enter')searchDrug()">
+
+        <button class="btn btn-scan px-3" onclick="openScanner()">
+          <i class="bi bi-camera-fill me-1"></i> สแกน
+        </button>
+
+        <!-- เพิ่มใหม่: เปิดแอปกล้องของเครื่องโดยตรง ไม่ต้องขอสิทธิ์กล้องใน iframe -->
+        <button class="btn btn-scan px-3" onclick="document.getElementById('barcodeFile').click()">
+          <i class="bi bi-image me-1"></i> ถ่ายภาพ
+        </button>
+      </div>
+      <input type="file" id="barcodeFile" accept="image/*" capture="environment"
+             style="display:none" onchange="scanFromImage(this)">
+      <div id="fileReaderTmp" style="display:none"></div>
+      <div class="form-text">สามารถใช้กล้องมือถือ ถ่ายภาพ Barcode หรือกรอกตัวเลข Barcode ได้</div>
+    </div>
+
+    <div id="scannerPanel" class="scanner-area mb-3" style="display:none">
+      <div class="d-flex justify-content-between mb-2">
+        <strong><i class="bi bi-camera"></i> สแกน Barcode</strong>
+        <button class="btn btn-sm btn-outline-danger" onclick="closeScanner()">
+          <i class="bi bi-x-lg"></i> ปิดกล้อง
+        </button>
+      </div>
+      <div id="reader"></div>
+    </div>
+
+    <div class="d-grid mb-3">
+      <button class="btn btn-primary" onclick="searchDrug()">
+        <i class="bi bi-search me-1"></i> ค้นหารายการยา
+      </button>
+    </div>
+
+    <div id="matchArea" style="display:none" class="mb-3">
+      <div class="alert alert-warning py-2 small">
+        พบ Barcode ซ้ำ กรุณาเลือกรายการที่ต้องการ
+      </div>
+      <div id="matchList"></div>
+    </div>
+
+    <div id="drugForm" style="display:none">
+
+      <hr>
+
+      <div class="section-title mb-3">
+        <i class="bi bi-capsule"></i> ข้อมูลรายการยา
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-12">
+          <label class="form-label">รายการยา</label>
+          <input id="drug" class="form-control readonly-field" readonly>
+        </div>
+        <div class="col-6">
+          <label class="form-label">ประเภท</label>
+          <input id="type" class="form-control readonly-field" readonly>
+        </div>
+        <div class="col-6">
+          <label class="form-label">คนดูแล</label>
+          <input id="staff" class="form-control readonly-field" readonly>
+        </div>
+      </div>
+
+      <div class="section-title mb-3">
+        <i class="bi bi-calendar2-week"></i> บันทึกวันหมดอายุ
+      </div>
+
+      <div class="info-box mb-3">
+        <i class="bi bi-info-circle me-1"></i>
+        กรอกตัวเลข 6 หลัก รูปแบบ DDMMYY เช่น 270925 = 27/09/2025
+      </div>
+
+      <div class="row g-3">
+        <div class="col-12 col-md-6">
+          <div class="expiry-box">
+            <label class="form-label">วันหมดอายุ(1)</label>
+            <input id="exp1" class="form-control"
+              inputmode="numeric" maxlength="6"
+              placeholder="DDMMYY"
+              oninput="handleExpiryInput(this,'preview1')">
+            <div id="preview1" class="expiry-preview">กรุณากรอกวันหมดอายุ</div>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <div class="expiry-box">
+            <label class="form-label">วันหมดอายุ(2)</label>
+            <input id="exp2" class="form-control"
+              inputmode="numeric" maxlength="6"
+              placeholder="DDMMYY"
+              oninput="handleExpiryInput(this,'preview2')">
+            <div id="preview2" class="expiry-preview">กรุณากรอกวันหมดอายุ</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-grid mt-4">
+        <button class="btn btn-success btn-lg" id="saveBtn" onclick="saveData()">
+          <i class="bi bi-save me-2"></i>บันทึกข้อมูล
+        </button>
+      </div>
+
+      <div class="text-center text-muted small mt-2">
+        เมื่อบันทึกสำเร็จ ระบบจะเปลี่ยนสถานะสำรวจเป็น TRUE
+      </div>
+    </div>
+  </div>
+
+  <!-- DATA TABLE -->
+  <div class="section-card">
+
+    <div class="section-title">
+      <i class="bi bi-table"></i>
+      รายการยาทั้งหมด
+    </div>
+
+    <!-- SEARCH -->
+    <div class="row g-2 align-items-center mb-3">
+      <div class="col-12 col-md-8">
+        <div class="input-group">
+          <span class="input-group-text bg-white">
+            <i class="bi bi-search"></i>
+          </span>
+          <input id="searchTable" class="form-control"
+            placeholder="ค้นหา Barcode / ชื่อยา / ประเภท"
+            oninput="searchTableData()">
+        </div>
+      </div>
+
+      <div class="col-12 col-md-4">
+        <button class="btn btn-outline-primary w-100" onclick="loadTable(1)">
+          <i class="bi bi-arrow-clockwise me-1"></i> รีเฟรชข้อมูล
+        </button>
+      </div>
+    </div>
+
+    <!-- TABLE INFO -->
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <small class="text-muted" id="tableInfo">กำลังโหลดข้อมูล...</small>
+      <span class="badge text-bg-light">50 รายการ / หน้า</span>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-hover table-bordered mb-2">
+        <thead>
+          <tr>
+            <th>Barcode</th>
+            <th>รายการยา</th>
+            <th>ประเภท</th>
+            <th>คนดูแล</th>
+            <th>EXP(1)</th>
+            <th>EXP(2)</th>
+            <th>สถานะ</th>
+            <th class="text-center">แก้ไข</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr>
+            <td colspan="8" class="text-center py-4">กำลังโหลดข้อมูล...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <nav class="mt-3">
+      <ul class="pagination justify-content-center flex-wrap" id="pagination"></ul>
+    </nav>
+
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal fade" id="editModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0" style="border-radius:16px">
+
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold">
+          <i class="bi bi-pencil-square text-primary me-2"></i>
+          แก้ไขวันหมดอายุ
+        </h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+
+        <input type="hidden" id="editRow">
+        <input type="hidden" id="editBarcode">
+
+        <div class="mb-3">
+          <label class="form-label">Barcode</label>
+          <input id="editBarcodeView" class="form-control readonly-field" readonly>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">รายการยา</label>
+          <input id="editDrug" class="form-control readonly-field" readonly>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">ประเภท</label>
+          <input id="editType" class="form-control readonly-field" readonly>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">คนดูแล</label>
+          <input id="editStaff" class="form-control readonly-field" readonly>
+        </div>
+
+        <div class="expiry-box mb-3">
+          <label class="form-label">วันหมดอายุ(1)</label>
+          <input id="editExp1" class="form-control"
+            inputmode="numeric" maxlength="6"
+            placeholder="DDMMYY"
+            oninput="handleExpiryInput(this,'editPreview1')">
+          <div id="editPreview1" class="expiry-preview"></div>
+        </div>
+
+        <div class="expiry-box">
+          <label class="form-label">วันหมดอายุ(2)</label>
+          <input id="editExp2" class="form-control"
+            inputmode="numeric" maxlength="6"
+            placeholder="DDMMYY"
+            oninput="handleExpiryInput(this,'editPreview2')">
+          <div id="editPreview2" class="expiry-preview"></div>
+        </div>
+
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-light" data-bs-dismiss="modal">ยกเลิก</button>
+        <button class="btn btn-primary" id="editSaveBtn" onclick="updateData()">
+          <i class="bi bi-save me-1"></i> บันทึกการแก้ไข
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loading">
+  <div class="text-center">
+    <div class="spinner-border text-primary mb-2"></div>
+    <div class="fw-semibold">กำลังดำเนินการ...</div>
+  </div>
+</div>
+
+<footer class="footer">
+  พัฒนาโดย ภก.ธนพล แสงทับทิม<br>
+  กลุ่มงานเภสัชกรรม โรงพยาบาลสมเด็จพระพุทธเลิศหล้า<br>
+  EXP(OPD) System
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+/*************************************************
+ * GLOBAL VARIABLES
+ *************************************************/
+let currentRecord = null;
+let currentPage = 1;
+let totalPages = 0;
+let searchTimer = null;
+let html5QrCode = null;
+let scannerRunning = false;
+
+const PAGE_SIZE = 50;
+
+const editModal = new bootstrap.Modal(
+  document.getElementById('editModal')
+);
+
+/*************************************************
+ * LOADING
+ *************************************************/
+function showLoading(){
+  document.getElementById('loading').classList.add('show');
+}
+
+function hideLoading(){
+  document.getElementById('loading').classList.remove('show');
+}
+
+/*************************************************
+ * ALERT
+ *************************************************/
+function showError(message){
+  Swal.fire({
+    icon:'error',
+    title:'ไม่สำเร็จ',
+    text:message || 'เกิดข้อผิดพลาด',
+    confirmButtonText:'ตกลง'
+  });
+}
+
+/*************************************************
+ * INITIALIZE
+ *************************************************/
+document.addEventListener('DOMContentLoaded',function(){
+  loadDashboard();
+  loadTable(1);
+  document.getElementById('barcode').focus();
+});
+
+/*************************************************
+ * DASHBOARD
+ *************************************************/
+function loadDashboard(){
+  google.script.run
+    .withSuccessHandler(function(data){
+      document.getElementById('totalCount').textContent =
+        data.total.toLocaleString();
+
+      document.getElementById('surveyedCount').textContent =
+        data.surveyed.toLocaleString();
+
+      document.getElementById('pendingCount').textContent =
+        data.pending.toLocaleString();
+
+      document.getElementById('recordedCount').textContent =
+        data.recorded.toLocaleString();
+    })
+    .withFailureHandler(function(error){
+      console.error(error);
+    })
+    .getDashboardSummary();
+}
+
+/*************************************************
+ * BARCODE SEARCH
+ *************************************************/
+function searchDrug(){
+
+  const barcode = document.getElementById('barcode').value.trim();
+
+  if(!barcode){
+    showError('กรุณากรอก Barcode');
+    return;
+  }
+
+  showLoading();
+
+  document.getElementById('drugForm').style.display='none';
+  document.getElementById('matchArea').style.display='none';
+
+  currentRecord=null;
+
+  google.script.run
+    .withSuccessHandler(function(matches){
+
+      hideLoading();
+
+      if(!matches || matches.length===0){
+        Swal.fire({
+          icon:'warning',
+          title:'ไม่พบข้อมูล',
+          text:'ไม่พบ Barcode นี้ในฐานข้อมูล'
+        });
+        return;
+      }
+
+      if(matches.length>1){
+        showMatches(matches);
+        return;
+      }
+
+      selectRecord(matches[0]);
+
+    })
+    .withFailureHandler(function(error){
+      hideLoading();
+      showError(error.message);
+    })
+    .searchBarcode(barcode);
+}
+
+/*************************************************
+ * DUPLICATE BARCODE
+ *************************************************/
+function showMatches(matches){
+
+  const area=document.getElementById('matchArea');
+  const list=document.getElementById('matchList');
+
+  list.innerHTML='';
+
+  matches.forEach(function(item,index){
+
+    const div=document.createElement('div');
+    div.className='match-item';
+
+    const title=document.createElement('div');
+    title.className='fw-bold';
+    title.textContent=(index+1)+'. '+item.drug;
+
+    const detail=document.createElement('div');
+    detail.className='small text-muted mt-1';
+    detail.textContent=
+      'ประเภท: '+item.type+
+      ' | คนดูแล: '+item.staff+
+      ' | แถว: '+item.rowNumber;
+
+    div.appendChild(title);
+    div.appendChild(detail);
+
+    div.addEventListener('click',function(){
+      selectRecord(item);
+    });
+
+    list.appendChild(div);
+  });
+
+  area.style.display='block';
+}
+
+/*************************************************
+ * SELECT DRUG
+ *************************************************/
+function selectRecord(item){
+
+  currentRecord=item;
+
+  document.getElementById('barcode').value=item.barcode;
+  document.getElementById('drug').value=item.drug;
+  document.getElementById('type').value=item.type;
+  document.getElementById('staff').value=item.staff;
+
+  document.getElementById('exp1').value=item.exp1||'';
+  document.getElementById('exp2').value=item.exp2||'';
+
+  document.getElementById('matchArea').style.display='none';
+  document.getElementById('drugForm').style.display='block';
+
+  handleExpiryInput(document.getElementById('exp1'),'preview1');
+  handleExpiryInput(document.getElementById('exp2'),'preview2');
+
+  document.getElementById('drugForm').scrollIntoView({
+    behavior:'smooth',
+    block:'start'
+  });
+}
+
+/*************************************************
+ * DATE VALIDATION DDMMYY
+ *************************************************/
+function parseExpiry(value){
+
+  const input=String(value||'').trim();
+
+  if(!input){
+    return {valid:true,empty:true,display:''};
+  }
+
+  if(!/^\d{6}$/.test(input)){
+    return {valid:false,message:'กรุณากรอกตัวเลข 6 หลัก'};
+  }
+
+  const day=Number(input.substring(0,2));
+  const month=Number(input.substring(2,4));
+  const year=2000+Number(input.substring(4,6));
+
+  const date=new Date(year,month-1,day);
+
+  if(
+    date.getFullYear()!==year ||
+    date.getMonth()!==month-1 ||
+    date.getDate()!==day
+  ){
+    return {
+      valid:false,
+      message:'วันที่ไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง'
+    };
+  }
+
+  return {
+    valid:true,
+    empty:false,
+    display:
+      String(day).padStart(2,'0')+'/' +
+      String(month).padStart(2,'0')+'/' +
+      year
+  };
+}
+
+function handleExpiryInput(input,previewId){
+
+  input.value=input.value.replace(/\D/g,'').slice(0,6);
+
+  const preview=document.getElementById(previewId);
+  const result=parseExpiry(input.value);
+
+  if(!input.value){
+    preview.textContent='กรุณากรอกวันหมดอายุ';
+    preview.style.color='#8794a3';
+    return;
+  }
+
+  if(input.value.length<6){
+    preview.textContent='กรอกอีก '+(6-input.value.length)+' หลัก';
+    preview.style.color='#d18b13';
+    return;
+  }
+
+  if(!result.valid){
+    preview.textContent=result.message;
+    preview.style.color='#dc3545';
+    return;
+  }
+
+  preview.textContent='วันที่ '+result.display;
+  preview.style.color='#16a36a';
+}
+
+function validateFormDates(exp1,exp2){
+
+  const fields=[
+    {value:exp1,name:'วันหมดอายุ(1)'},
+    {value:exp2,name:'วันหมดอายุ(2)'}
+  ];
+
+  for(const field of fields){
+    const result=parseExpiry(field.value);
+
+    if(!result.valid){
+      throw new Error(field.name+': '+result.message);
+    }
+  }
+
+  return true;
+}
+
+/*************************************************
+ * SAVE DATA
+ *************************************************/
+function saveData(){
+
+  if(!currentRecord){
+    showError('กรุณาค้นหารายการยาก่อน');
+    return;
+  }
+
+  const exp1=document.getElementById('exp1').value.trim();
+  const exp2=document.getElementById('exp2').value.trim();
+
+  try{
+    validateFormDates(exp1,exp2);
+  }catch(error){
+    showError(error.message);
+    return;
+  }
+
+  Swal.fire({
+    icon:'question',
+    title:'ยืนยันการบันทึก?',
+    html:
+      '<div class="text-start">'+
+      '<b>รายการยา:</b> '+escapeHtml(currentRecord.drug)+'<br>'+
+      '<b>EXP(1):</b> '+(parseExpiry(exp1).display||'-')+'<br>'+
+      '<b>EXP(2):</b> '+(parseExpiry(exp2).display||'-')+
+      '</div>',
+    showCancelButton:true,
+    confirmButtonText:'ยืนยันบันทึก',
+    cancelButtonText:'ยกเลิก',
+    confirmButtonColor:'#16a36a'
+  }).then(function(result){
+
+    if(!result.isConfirmed)return;
+
+    showLoading();
+    document.getElementById('saveBtn').disabled=true;
+
+    google.script.run
+      .withSuccessHandler(function(response){
+
+        hideLoading();
+        document.getElementById('saveBtn').disabled=false;
+
+        Swal.fire({
+          icon:'success',
+          title:'บันทึกสำเร็จ',
+          text:response.message,
+          timer:1400,
+          showConfirmButton:false
+        }).then(function(){
+          resetToMain();
+        });
+
+      })
+      .withFailureHandler(function(error){
+
+        hideLoading();
+        document.getElementById('saveBtn').disabled=false;
+        showError(error.message);
+
+      })
+      .saveExpiryData({
+        rowNumber:currentRecord.rowNumber,
+        barcode:currentRecord.barcode,
+        exp1:exp1,
+        exp2:exp2
+      });
+  });
+}
+
+/*************************************************
+ * RESET / BACK TO MAIN
+ *************************************************/
+function resetToMain(){
+
+  currentRecord=null;
+
+  ['barcode','drug','type','staff','exp1','exp2'].forEach(function(id){
+    document.getElementById(id).value='';
+  });
+
+  handleExpiryInput(document.getElementById('exp1'),'preview1');
+  handleExpiryInput(document.getElementById('exp2'),'preview2');
+
+  document.getElementById('drugForm').style.display='none';
+  document.getElementById('matchArea').style.display='none';
+  document.getElementById('matchList').innerHTML='';
+
+  loadDashboard();
+  loadTable(currentPage);
+
+  window.scrollTo({top:0,behavior:'smooth'});
+  document.getElementById('barcode').focus();
+}
+
+/*************************************************
+ * TABLE FILTER
+ *************************************************/
+
+function getCurrentTableSearch(){
+  return document.getElementById('searchTable').value.trim();
+}
+
+/*************************************************
+ * LOAD TABLE
+ *************************************************/
+function loadTable(page){
+
+  currentPage=page||1;
+
+  const search=getCurrentTableSearch();
+
+  showLoading();
+
+  google.script.run
+    .withSuccessHandler(function(result){
+
+      hideLoading();
+      renderTable(result);
+
+    })
+    .withFailureHandler(function(error){
+
+      hideLoading();
+      showError(error.message);
+
+    })
+    .getPaginatedData(currentPage,PAGE_SIZE,search);
+}
+
+/*************************************************
+ * GENERAL SEARCH
+ *************************************************/
+function searchTableData(){
+
+  clearTimeout(searchTimer);
+
+  searchTimer=setTimeout(function(){
+
+    loadTable(1);
+
+  },400);
+}
+
+/*************************************************
+ * RENDER TABLE
+ *************************************************/
+function renderTable(result){
+
+  const tbody=document.getElementById('tableBody');
+  const info=document.getElementById('tableInfo');
+  const pagination=document.getElementById('pagination');
+
+  tbody.innerHTML='';
+  pagination.innerHTML='';
+
+  totalPages=result.totalPages;
+
+  if(!result.data.length){
+
+    tbody.innerHTML=
+      '<tr><td colspan="8" class="text-center py-4 text-muted">'+
+      'ไม่พบข้อมูล'+
+      '</td></tr>';
+
+    info.textContent='พบข้อมูล 0 รายการ';
+    return;
+  }
+
+  result.data.forEach(function(item){
+
+    const tr=document.createElement('tr');
+
+    function addCell(value,className){
+
+      const td=document.createElement('td');
+
+      if(className)td.className=className;
+
+      td.textContent=value||'-';
+
+      tr.appendChild(td);
+    }
+
+    addCell(item.barcode);
+    addCell(item.drug,'drug-name');
+    addCell(item.type);
+    addCell(item.staff);
+    addCell(item.exp1);
+    addCell(item.exp2);
+
+    const status=document.createElement('td');
+    const badge=document.createElement('span');
+
+    badge.className=item.surveyed
+      ?'badge-surveyed'
+      :'badge-pending';
+
+    badge.textContent=item.surveyed
+      ?'สำรวจแล้ว'
+      :'ยังไม่สำรวจ';
+
+    status.appendChild(badge);
+    tr.appendChild(status);
+
+    const action=document.createElement('td');
+    action.className='text-center';
+
+    const button=document.createElement('button');
+    button.className='btn btn-sm btn-outline-primary';
+    button.innerHTML='<i class="bi bi-pencil-square"></i>';
+
+    button.addEventListener('click',function(){
+      openEdit(item);
+    });
+
+    action.appendChild(button);
+    tr.appendChild(action);
+
+    tbody.appendChild(tr);
+  });
+
+  const start=(result.page-1)*result.pageSize+1;
+  const end=Math.min(
+    start+result.data.length-1,
+    result.total
+  );
+
+  info.textContent=
+    'แสดง '+start+' - '+end+
+    ' จากทั้งหมด '+result.total.toLocaleString()+' รายการ';
+
+  renderPagination(result.page,result.totalPages);
+}
+
+/*************************************************
+ * PAGINATION
+ *************************************************/
+function renderPagination(page,pages){
+
+  const container=document.getElementById('pagination');
+  container.innerHTML='';
+
+  if(pages<=1)return;
+
+  function addPage(label,target,disabled,active){
+
+    const li=document.createElement('li');
+
+    li.className='page-item'+
+      (disabled?' disabled':'')+
+      (active?' active':'');
+
+    const a=document.createElement('a');
+    a.className='page-link';
+    a.href='javascript:void(0)';
+    a.textContent=label;
+
+    if(!disabled){
+      a.addEventListener('click',function(){
+        loadTable(target);
+      });
+    }
+
+    li.appendChild(a);
+    container.appendChild(li);
+  }
+
+  addPage('«',page-1,page===1,false);
+
+  let start=Math.max(1,page-2);
+  let end=Math.min(pages,page+2);
+
+  if(page<=3)end=Math.min(5,pages);
+  if(page>pages-3)start=Math.max(1,pages-4);
+
+  for(let i=start;i<=end;i++){
+    addPage(String(i),i,false,i===page);
+  }
+
+  addPage('»',page+1,page===pages,false);
+}
+
+/*************************************************
+ * EDIT MODAL
+ *************************************************/
+function openEdit(item){
+
+  document.getElementById('editRow').value=item.rowNumber;
+  document.getElementById('editBarcode').value=item.barcode;
+
+  document.getElementById('editBarcodeView').value=item.barcode;
+  document.getElementById('editDrug').value=item.drug;
+  document.getElementById('editType').value=item.type;
+  document.getElementById('editStaff').value=item.staff;
+
+  document.getElementById('editExp1').value=item.exp1Input||'';
+  document.getElementById('editExp2').value=item.exp2Input||'';
+
+  handleExpiryInput(document.getElementById('editExp1'),'editPreview1');
+  handleExpiryInput(document.getElementById('editExp2'),'editPreview2');
+
+  editModal.show();
+}
+
+/*************************************************
+ * UPDATE DATA
+ *************************************************/
+function updateData(){
+
+  const exp1=document.getElementById('editExp1').value.trim();
+  const exp2=document.getElementById('editExp2').value.trim();
+
+  try{
+    validateFormDates(exp1,exp2);
+  }catch(error){
+    showError(error.message);
+    return;
+  }
+
+  const data={
+    rowNumber:Number(document.getElementById('editRow').value),
+    barcode:document.getElementById('editBarcode').value,
+    exp1:exp1,
+    exp2:exp2
+  };
+
+  Swal.fire({
+    icon:'question',
+    title:'ยืนยันการแก้ไข?',
+    showCancelButton:true,
+    confirmButtonText:'บันทึกการแก้ไข',
+    cancelButtonText:'ยกเลิก'
+  }).then(function(result){
+
+    if(!result.isConfirmed)return;
+
+    showLoading();
+    document.getElementById('editSaveBtn').disabled=true;
+
+    google.script.run
+      .withSuccessHandler(function(response){
+
+        hideLoading();
+        document.getElementById('editSaveBtn').disabled=false;
+
+        editModal.hide();
+
+        Swal.fire({
+          icon:'success',
+          title:'แก้ไขสำเร็จ',
+          text:response.message,
+          timer:1200,
+          showConfirmButton:false
+        });
+
+        loadTable(currentPage);
+        loadDashboard();
+
+      })
+      .withFailureHandler(function(error){
+
+        hideLoading();
+        document.getElementById('editSaveBtn').disabled=false;
+        showError(error.message);
+
+      })
+      .updateExpiryData(data);
+  });
+}
+
+/*************************************************
+ * BARCODE SCANNER
+ * รองรับ Android Chrome + iPhone/iPad Safari
+ * คงชื่อฟังก์ชัน openScanner / closeScanner เดิม
+ *************************************************/
+let scannerStarting = false;
+let scannerHandled = false;
+
+function isAppleMobileBrowser(){
+  return /iPhone|iPad|iPod/i.test(navigator.userAgent || '') ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+function getCameraErrorMessage(error){
+  const name = error && error.name ? error.name : '';
+  const message = error && error.message ? error.message : '';
+  const apple = isAppleMobileBrowser();
+
+  if (!window.isSecureContext) {
+    return 'ต้องเปิด Web App ผ่าน HTTPS เท่านั้นจึงจะใช้กล้องได้ กรุณาเปิด URL Google Apps Script ที่ลงท้ายด้วย /exec';
+  }
+
+  if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+    return apple
+      ? 'Safari ยังไม่ได้รับอนุญาตให้ใช้กล้อง กรุณาเปิดการตั้งค่า iPhone > Safari > กล้อง แล้วเลือก อนุญาต หรือแตะ aA ที่แถบ URL > การตั้งค่าเว็บไซต์ > กล้อง > อนุญาต จากนั้นโหลดหน้าเว็บใหม่'
+      : 'Chrome ยังไม่ได้รับอนุญาตให้ใช้กล้อง กรุณาแตะไอคอนด้านซ้ายของ URL > การตั้งค่าเว็บไซต์ > กล้อง > อนุญาต และตรวจสอบการตั้งค่า Android > แอป > Chrome > สิทธิ์ > กล้อง';
+  }
+
+  if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
+    return 'ไม่พบกล้องในอุปกรณ์ กรุณาตรวจสอบกล้องและลองเปิดหน้าเว็บด้วย Safari หรือ Chrome โดยตรง';
+  }
+
+  if (name === 'NotReadableError' || name === 'TrackStartError') {
+    return 'ไม่สามารถเริ่มใช้งานกล้องได้ กล้องอาจกำลังถูกใช้งานโดยแอปอื่น กรุณาปิดแอปกล้อง/แอปสแกนอื่น แล้วลองอีกครั้ง';
+  }
+
+  if (name === 'OverconstrainedError' || name === 'ConstraintNotSatisfiedError') {
+    return 'ไม่พบกล้องที่ตรงกับการตั้งค่ากล้องหลัง ระบบจะลองเลือกกล้องอื่น กรุณาปิดแล้วเปิดสแกนใหม่หากยังไม่สำเร็จ';
+  }
+
+  if (name === 'SecurityError') {
+    return 'เบราว์เซอร์ไม่อนุญาตให้เข้าถึงกล้อง กรุณาตรวจสอบ HTTPS และสิทธิ์การใช้กล้องของเว็บไซต์';
+  }
+
+  if (name === 'AbortError') {
+    return 'การเปิดกล้องถูกยกเลิก กรุณาลองกดเปิดกล้องอีกครั้ง';
+  }
+
+  return 'เปิดกล้องไม่สำเร็จ' + (message ? ': ' + message : ' กรุณาตรวจสอบสิทธิ์กล้องและลองใหม่');
+}
+
+function showScannerMessage(message, type){
+  const reader = document.getElementById('reader');
+  if (!reader) return;
+
+  let box = document.getElementById('scannerMessage');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'scannerMessage';
+    box.className = 'alert small mt-2 mb-0';
+    reader.insertAdjacentElement('afterend', box);
+  }
+
+  box.className = 'alert small mt-2 mb-0 ' +
+    (type === 'success' ? 'alert-success' :
+     type === 'warning' ? 'alert-warning' : 'alert-danger');
+  box.textContent = message;
+  box.style.display = 'block';
+}
+
+function getScannerConfig(){
+  const formats = [];
+  if (typeof Html5QrcodeSupportedFormats !== 'undefined') {
+    [
+      'EAN_13', 'EAN_8', 'CODE_128', 'CODE_39', 'UPC_A', 'UPC_E'
+    ].forEach(function(key){
+      if (Html5QrcodeSupportedFormats[key] !== undefined) {
+        formats.push(Html5QrcodeSupportedFormats[key]);
+      }
+    });
+  }
+
+  const config = {
+    fps: 10,
+    // กรอบสแกนยืดหยุ่นตามขนาดหน้าจอ รองรับจอมือถือแนวตั้ง
+    qrbox: function(width, height){
+      return {
+        width: Math.max(180, Math.min(Math.floor(width * 0.85), 320)),
+        height: Math.max(90, Math.min(Math.floor(height * 0.35), 130))
+      };
+    },
+    // ปิดเสียง/การสแกนต่อเนื่องหลังอ่านสำเร็จจะจัดการใน callback
+    disableFlip: false
+  };
+
+  if (formats.length) config.formatsToSupport = formats;
+  return config;
+}
+
+async function openScanner(){
+  const panel = document.getElementById('scannerPanel');
+
+  if (scannerStarting) return;
+  if (scannerRunning) {
+    panel.style.display = 'block';
+    return;
+  }
+
+  panel.style.display = 'block';
+  panel.scrollIntoView({ behavior:'smooth', block:'center' });
+
+  if (!window.isSecureContext) {
+    showScannerMessage(
+      'ต้องเปิด Web App ผ่าน HTTPS เท่านั้นจึงจะใช้กล้องได้ กรุณาเปิด URL Google Apps Script ที่ลงท้ายด้วย /exec',
+      'warning'
+    );
+    return;
+  }
+
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showScannerMessage(
+      'เบราว์เซอร์นี้ไม่รองรับการเข้าถึงกล้อง กรุณาเปิดลิงก์ด้วย Google Chrome บน Android หรือ Safari บน iPhone/iPad โดยตรง ไม่ใช่ Browser ภายในแอปอื่น — หรือปิดกล้องนี้แล้วกดปุ่ม "ถ่ายภาพ" แทน',
+      'warning'
+    );
+    return;
+  }
+
+  if (typeof Html5Qrcode === 'undefined') {
+    showScannerMessage(
+      'โหลดไลบรารีสแกน Barcode ไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วรีเฟรชหน้าเว็บ',
+      'danger'
+    );
+    return;
+  }
+
+  scannerStarting = true;
+  scannerHandled = false;
+  const oldMessage = document.getElementById('scannerMessage');
+  if (oldMessage) oldMessage.remove();
+
+  try {
+    // สำคัญสำหรับ Safari/iOS: ขอเปิดกล้องจากการกดปุ่มโดยตรง
+    // ไม่เปิด getUserMedia เพื่อทดสอบแล้วปิดก่อน เพราะ Safari บางรุ่น
+    // อาจยกเลิกสิทธิ์/เซสชันกล้องเมื่อมีการเปิดกล้องซ้ำ
+    html5QrCode = new Html5Qrcode('reader', {
+      verbose: false,
+      useBarCodeDetectorIfSupported: true
+    });
+
+    const config = getScannerConfig();
+    let started = false;
+    let startError = null;
+
+    // วิธีแรก: ขอใช้กล้องหลังด้วย facingMode แบบ ideal ซึ่งยืดหยุ่นกว่า exact
+    try {
+      await html5QrCode.start(
+        { facingMode: { ideal: 'environment' } },
+        config,
+        async function(decodedText){
+          if (scannerHandled) return;
+          const code = String(decodedText || '').trim();
+          if (!code) return;
+
+          scannerHandled = true;
+          document.getElementById('barcode').value = code;
+          await stopScanner();
+          document.getElementById('scannerPanel').style.display = 'none';
+          searchDrug();
+        },
+        function(){ /* ไม่แจ้งเตือนระหว่างที่ยังค้นหา Barcode */ }
+      );
+      started = true;
+    } catch (error) {
+      startError = error;
+      // หากเป็นปัญหาสิทธิ์หรือไม่พบอุปกรณ์ ไม่ควรลองเปิดกล้องซ้ำ
+      if (error && (
+        error.name === 'NotAllowedError' ||
+        error.name === 'PermissionDeniedError' ||
+        error.name === 'NotFoundError' ||
+        error.name === 'DevicesNotFoundError'
+      )) throw error;
+
+      // วิธีสำรอง: ขอรายการกล้อง แล้วเปิดด้วย cameraId
+      // ใช้ได้กับอุปกรณ์ที่ไม่รองรับ facingMode constraint
+      const cameras = await Html5Qrcode.getCameras();
+      if (!cameras || !cameras.length) throw startError;
+
+      const selectedCamera =
+        cameras.find(camera => /back|rear|environment|หลัง/i.test(camera.label || '')) ||
+        cameras[cameras.length - 1];
+
+      await html5QrCode.start(
+        selectedCamera.id,
+        config,
+        async function(decodedText){
+          if (scannerHandled) return;
+          const code = String(decodedText || '').trim();
+          if (!code) return;
+
+          scannerHandled = true;
+          document.getElementById('barcode').value = code;
+          await stopScanner();
+          document.getElementById('scannerPanel').style.display = 'none';
+          searchDrug();
+        },
+        function(){ /* ไม่แจ้งเตือนระหว่างที่ยังค้นหา Barcode */ }
+      );
+      started = true;
+    }
+
+    if (started) {
+      scannerRunning = true;
+      showScannerMessage(
+        isAppleMobileBrowser()
+          ? 'กำลังใช้กล้อง Safari กรุณาวาง Barcode ให้อยู่ในกรอบสแกน'
+          : 'กำลังใช้กล้อง กรุณาวาง Barcode ให้อยู่ในกรอบสแกน',
+        'success'
+      );
+    }
+
+  } catch (error) {
+    console.error('เปิดกล้องไม่สำเร็จ:', error);
+    scannerRunning = false;
+
+    if (html5QrCode) {
+      try {
+        // ถ้า start เปิด stream ไปบางส่วน ให้พยายามหยุดก่อนล้าง
+        await html5QrCode.stop();
+      } catch (stopError) {
+        // อาจยังไม่อยู่ในสถานะกำลังสแกน จึงไม่ต้องแจ้งซ้ำ
+      }
+      try {
+        await html5QrCode.clear();
+      } catch (clearError) {
+        console.warn('Clear scanner:', clearError);
+      }
+      html5QrCode = null;
+    }
+
+    showScannerMessage(
+      getCameraErrorMessage(error) +
+      ' — หากยังไม่ได้ ให้ปิดกล้องนี้แล้วกดปุ่ม "ถ่ายภาพ" แทน',
+      'danger'
+    );
+
+  } finally {
+    scannerStarting = false;
+  }
+}
+
+async function stopScanner(){
+  const scanner = html5QrCode;
+  if (!scanner) {
+    scannerRunning = false;
+    return;
+  }
+
+  try {
+    if (scannerRunning) await scanner.stop();
+  } catch (error) {
+    console.warn('หยุดกล้อง:', error);
+  } finally {
+    scannerRunning = false;
+    try {
+      await scanner.clear();
+    } catch (error) {
+      console.warn('ล้างพื้นที่สแกน:', error);
+    }
+    if (html5QrCode === scanner) html5QrCode = null;
+  }
+}
+
+async function closeScanner(){
+  await stopScanner();
+  const panel = document.getElementById('scannerPanel');
+  panel.style.display = 'none';
+  const message = document.getElementById('scannerMessage');
+  if (message) message.remove();
+  scannerHandled = false;
+}
+
+/*************************************************
+ * SCAN FROM PHOTO (เปิดแอปกล้องของเครื่อง แล้วอ่าน Barcode จากรูป)
+ * ใช้ได้แม้กล้องสดถูกบล็อกโดย iframe ของ Google Apps Script
+ *************************************************/
+async function scanFromImage(input){
+  const file = input.files && input.files[0];
+  if (!file) return;
+
+  if (typeof Html5Qrcode === 'undefined') {
+    showError('โหลดไลบรารีสแกน Barcode ไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วรีเฟรชหน้าเว็บ');
+    input.value = '';
+    return;
+  }
+
+  showLoading();
+  let scanner = null;
+
+  try {
+    scanner = new Html5Qrcode('fileReaderTmp', {
+      verbose: false,
+      useBarCodeDetectorIfSupported: true,
+      formatsToSupport: [
+        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.CODE_128,
+        Html5QrcodeSupportedFormats.CODE_39,
+        Html5QrcodeSupportedFormats.UPC_A,
+        Html5QrcodeSupportedFormats.UPC_E
+      ]
+    });
+
+    const code = String(await scanner.scanFile(file, false) || '').trim();
+    hideLoading();
+
+    if (code) {
+      document.getElementById('barcode').value = code;
+      searchDrug();
+    } else {
+      showError('อ่าน Barcode ไม่สำเร็จ');
+    }
+  } catch (error) {
+    hideLoading();
+    showError('อ่าน Barcode จากรูปไม่สำเร็จ กรุณาถ่ายให้ใกล้และชัดขึ้น ให้ Barcode อยู่กลางภาพแล้วลองอีกครั้ง');
+  } finally {
+    if (scanner) { try { scanner.clear(); } catch (e) {} }
+    input.value = '';   // ให้เลือกไฟล์เดิมซ้ำได้
+  }
+}
+
+/*************************************************
+ * SAFE HTML
+ *************************************************/
+function escapeHtml(value){
+
+  return String(value==null?'':value)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#039;');
+}
+
+</script>
+</body>
+</html>
